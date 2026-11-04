@@ -38,7 +38,7 @@ function Stat({ icon: Icon, label, value, tone }: { icon: typeof Wallet; label: 
 }
 
 function Dashboard() {
-  const { t, money, num, cat, date, lang } = useI18n();
+  const { t, money, num, cat, date, lang, plan } = useI18n();
   const subs = useSubscriptions();
   const tot = totals(subs);
   const al = alerts(subs);
@@ -98,7 +98,7 @@ function Dashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={lang === "ar" ? [...bars].reverse() : bars}>
                   <XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} interval={0} angle={-30} textAnchor="end" height={50} axisLine={false} tickLine={false} />
-                  <YAxis orientation={lang === "ar" ? "right" : "left"} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={40} />
+                  <YAxis tickFormatter={(v: number) => num(v)} orientation={lang === "ar" ? "right" : "left"} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={40} />
                   <Tooltip cursor={{ fill: "var(--muted)" }} formatter={(v: number) => [money(v), t.perMonth]} contentStyle={{ borderRadius: 8, border: "1px solid var(--border)", fontSize: 12 }} />
                   <Bar dataKey="value" fill="var(--chart-4)" radius={[6, 6, 0, 0]} />
                 </BarChart>
@@ -139,7 +139,7 @@ function Dashboard() {
           <Card>
             <div className="flex items-center justify-between">
               <h2 className="font-bold">{t.upcomingPayments}</h2>
-              <Link to="/subscriptions" className="flex items-center gap-1 text-xs font-medium text-primary">{t.allRenewals} <Arrow className="size-3" /></Link>
+              <Link to="/subscriptions" search={{ q: undefined }} className="flex items-center gap-1 text-xs font-medium text-primary">{t.allRenewals} <Arrow className="size-3" /></Link>
             </div>
             <ul className="mt-4 space-y-3">
               {upcoming.map((s) => {
@@ -154,7 +154,7 @@ function Dashboard() {
                       <ServiceLogo sub={s} />
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium">{s.name}</p>
-                        <p className="truncate text-xs text-muted-foreground">{s.plan}</p>
+                        <p className="truncate text-xs text-muted-foreground">{plan(s.plan)}</p>
                       </div>
                       <span className={`rounded-full px-2 py-0.5 text-[11px] ${d <= 5 ? "bg-warning-soft text-warning-foreground" : "bg-muted text-muted-foreground"}`}>{t.in(d)}</span>
                       <span className="w-24 text-end text-sm font-semibold">{money(s.price)}</span>
@@ -167,14 +167,14 @@ function Dashboard() {
           <Card>
             <div className="flex items-center justify-between">
               <h2 className="font-bold">{t.needsAttention}</h2>
-              <Link to="/subscriptions" className="flex items-center gap-1 text-xs font-medium text-primary">{t.viewAll} <Arrow className="size-3" /></Link>
+              <Link to="/subscriptions" search={{ q: undefined }} className="flex items-center gap-1 text-xs font-medium text-primary">{t.viewAll} <Arrow className="size-3" /></Link>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {attention.map((s) => (
                 <button key={s.id} onClick={() => openEdit(s)} className="rounded-xl border border-border p-4 text-start hover:bg-muted/50">
                   <div className="flex items-center gap-3">
                     <ServiceLogo sub={s} />
-                    <div className="min-w-0"><p className="truncate font-medium">{s.name}</p><p className="truncate text-xs text-muted-foreground">{s.plan}</p></div>
+                    <div className="min-w-0"><p className="truncate font-medium">{s.name}</p><p className="truncate text-xs text-muted-foreground">{plan(s.plan)}</p></div>
                   </div>
                   <p className="mt-3 text-lg font-bold">{money(s.price)}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5"><CategoryBadge category={s.category} /><StatusBadge status={displayStatus(s)} /></div>

@@ -14,6 +14,10 @@ export type Subscription = {
   trial?: boolean;
   canceled?: boolean;
   color?: string;
+  startDate?: string;
+  remind?: boolean;
+  remindDays?: number;
+  manageUrl?: string;
 };
 
 export type DisplayStatus = "dueSoon" | "upcoming" | "active" | "expired" | "canceled";
@@ -36,7 +40,7 @@ function addDays(n: number, base = new Date()) {
 }
 
 export function daysUntil(iso: string, today = new Date()) {
-  const [y, m, d] = iso.split("-").map(Number);
+  const [y = 0, m = 1, d = 1] = iso.split("-").map(Number);
   const target = new Date(y, m - 1, d).getTime();
   const t = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   return Math.round((target - t) / 86400000);
@@ -80,9 +84,20 @@ export function alerts(list: Subscription[], today = new Date()): Alert[] {
   return list
     .filter((s) => isActive(s, today))
     .map((s) => ({ s, days: daysUntil(s.nextRenewal, today) }))
-    .filter(({ days }) => days >= 0 && days <= REMINDER_DAYS)
+    .filter(({ s, days }) => days >= 0 && (s.trial || s.remind !== false) && days <= (s.trial ? REMINDER_DAYS : Math.max(s.remindDays ?? REMINDER_DAYS, REMINDER_DAYS)))
     .sort((a, b) => a.days - b.days)
     .map(({ s, days }) => ({ id: `${s.trial ? "trial" : "renewal"}-${s.id}`, kind: s.trial ? "trial" : "renewal", sub: s, days }));
+}
+
+/** "renewal" sort: upcoming (active) first by date, then expired/canceled last. */
+export function sortSubs(list: Subscription[], sort: string, today = new Date()) {
+  return [...list].sort((a, b) => {
+    if (sort === "price") return b.price - a.price;
+    if (sort === "name") return a.name.localeCompare(b.name);
+    const ra = isActive(a, today) ? 0 : 1, rb = isActive(b, today) ? 0 : 1;
+    if (ra !== rb) return ra - rb;
+    return ra === 0 ? a.nextRenewal.localeCompare(b.nextRenewal) : b.nextRenewal.localeCompare(a.nextRenewal);
+  });
 }
 
 export function byCategory(list: Subscription[], today = new Date()) {
