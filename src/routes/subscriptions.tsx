@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 type Tab = "all" | "active" | "trial" | "canceled";
 
 export const Route = createFileRoute("/subscriptions")({
-  validateSearch: (s: Record<string, unknown>) => ({ q: typeof s["q"] === "string" ? (s["q"] as string) : undefined }),
+  validateSearch: (s: Record<string, unknown>): { q?: string } => ({ q: typeof s["q"] === "string" ? (s["q"] as string) : undefined }),
   head: () => ({
     meta: [
       { title: "Subvia — اشتراكاتي | My subscriptions" },
