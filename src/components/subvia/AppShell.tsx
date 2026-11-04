@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Bell, Home, Layers, Search, RotateCcw } from "lucide-react";
+import { Bell, Home, Layers, Search, RotateCcw, Sun, Moon } from "lucide-react";
+import { setTheme, useTheme } from "@/lib/theme";
 import { useState, type ReactNode } from "react";
 import { setLang, useI18n } from "@/lib/i18n";
 import { alerts, subsStore, useSubscriptions } from "@/lib/subs";
@@ -30,6 +31,20 @@ export function LangSwitch() {
           )}
         >
           {l === "ar" ? "العربية" : "English"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ThemeSwitch() {
+  const theme = useTheme();
+  const { t } = useI18n();
+  return (
+    <div className="flex rounded-full bg-muted p-1">
+      {(["light", "dark"] as const).map((m) => (
+        <button key={m} onClick={() => setTheme(m)} aria-label={m === "light" ? t.light : t.dark} className={cn("inline-flex size-8 items-center justify-center rounded-full transition-colors", theme === m ? "bg-card text-primary shadow-card" : "text-muted-foreground hover:text-foreground")}>
+          {m === "light" ? <Sun className="size-4" /> : <Moon className="size-4" />}
         </button>
       ))}
     </div>
@@ -104,10 +119,12 @@ export function AppShell({ title, subtitle, children, onSearch }: { title: strin
             />
           </form>
           <LangSwitch />
-          <Link to="/notifications" className="relative inline-flex size-9 items-center justify-center rounded-full border border-border hover:bg-muted" aria-label={t.notifications}>
+          <ThemeSwitch />
+          <Link to="/notifications" className="relative inline-flex size-10 items-center justify-center rounded-xl border border-border bg-card hover:bg-muted" aria-label={t.notifications}>
             <Bell className="size-4" />
-            {count > 0 && <span className="absolute end-2 top-2 size-2 rounded-full bg-destructive" />}
+            {count > 0 && <span className="absolute end-2.5 top-2 size-2 rounded-full bg-destructive" />}
           </Link>
+          <span className="inline-flex size-10 items-center justify-center rounded-full bg-primary-soft text-sm font-medium text-primary" aria-hidden>{t.status === "Status" ? "R" : "ر"}</span>
         </header>
 
         <nav className="flex gap-1 border-b border-border bg-card px-4 py-2 md:hidden">
