@@ -79,9 +79,9 @@ const dict = {
     sortPrice: "ترتيب: الأعلى سعرًا",
     sortName: "ترتيب: الاسم",
     noResults: "لا توجد اشتراكات مطابقة",
-    showing: (n: number, t: number) => `عرض ${n} من ${t} اشتراكًا`,
+    showing: (n: string, t: string) => `عرض ${n} من ${t} اشتراكًا`,
     monthlyTotalShort: "الإجمالي الشهري",
-    subsCount: (n: number) => `${n} اشتراكًا`,
+    subsCount: (n: string) => `${n} اشتراكًا`,
     rs: "ر.س",
     in: (d: number) => (d === 0 ? "اليوم" : d === 1 ? "خلال ٢٤ ساعة" : `بعد ${d} أيام`),
     ago: (d: number) => `منذ ${d} أيام`,
@@ -98,6 +98,11 @@ const dict = {
     localNote: "بياناتك محفوظة في هذا المتصفح فقط",
     resetDemo: "استعادة البيانات التجريبية",
     trialBadge: "تجريبي",
+    secService: "الخدمة", secBilling: "الفوترة", secReminders: "التذكيرات", secManage: "الإدارة",
+    serviceName: "اسم الخدمة", startDate: "تاريخ البدء", autoCalc: "يُحسب تلقائيًا من تاريخ البدء والدورة",
+    remindMe: "ذكّرني قبل التجديد", before: (n: string) => `قبل ${n} أيام`, manageUrl: "رابط إدارة الاشتراك",
+    manageUrlHint: "يُفتح عند الضغط على «إدارة» لإلغاء الاشتراك أو تعديله", addSubTitle: "إضافة اشتراك", newSubHint: "أدخل تفاصيل الاشتراك الجديد",
+    openManage: "فتح صفحة الإدارة", light: "فاتح", dark: "داكن",
   },
   en: {
     menu: "Menu",
@@ -152,9 +157,9 @@ const dict = {
     sortPrice: "Sort: Highest price",
     sortName: "Sort: Name",
     noResults: "No matching subscriptions",
-    showing: (n: number, t: number) => `Showing ${n} of ${t} subscriptions`,
+    showing: (n: string, t: string) => `Showing ${n} of ${t} subscriptions`,
     monthlyTotalShort: "Monthly total",
-    subsCount: (n: number) => `${n} subscriptions`,
+    subsCount: (n: string) => `${n} subscriptions`,
     rs: "SAR",
     in: (d: number) => (d === 0 ? "today" : d === 1 ? "within 24 h" : `in ${d} days`),
     ago: (d: number) => `${d} days ago`,
@@ -171,6 +176,11 @@ const dict = {
     localNote: "Your data is stored in this browser only",
     resetDemo: "Restore demo data",
     trialBadge: "Trial",
+    secService: "Service", secBilling: "Billing", secReminders: "Reminders", secManage: "Management",
+    serviceName: "Service name", startDate: "Start date", autoCalc: "Calculated from start date and cycle",
+    remindMe: "Remind me before renewal", before: (n: string) => `${n} days before`, manageUrl: "Subscription management link",
+    manageUrlHint: "Opens when you click “Manage” to cancel or change the subscription", addSubTitle: "Add subscription", newSubHint: "Enter the new subscription details",
+    openManage: "Open management page", light: "Light", dark: "Dark",
   },
 };
 
@@ -187,6 +197,11 @@ const cycles: Record<Lang, Record<Cycle, string>> = {
   en: { monthly: "Monthly", yearly: "Yearly" },
 };
 
+const plansAr: Record<string, string> = {
+  premium: "الخطة المميزة", family: "الخطة العائلية", "free trial": "فترة تجريبية", monthly: "شهري", yearly: "سنوي",
+  individual: "فردي", "all apps": "كل التطبيقات", student: "طلابي", basic: "الأساسية", standard: "القياسية", plus: "بلس", vip: "VIP",
+};
+
 export function useI18n() {
   const l = useSyncExternalStore(
     (f) => {
@@ -199,15 +214,36 @@ export function useI18n() {
   const locale = l === "ar" ? "ar-SA-u-nu-arab-ca-gregory" : "en-GB";
   const nf = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const nfInt = new Intl.NumberFormat(locale);
-  const t = dict[l];
+  const num = (n: number) => nfInt.format(n);
+  const rel = (d: number) => {
+    if (l === "en") {
+      if (d === 0) return "today";
+      if (d === 1) return "within 24 h";
+      if (d === -1) return "1 day ago";
+      return d > 0 ? `in ${d} days` : `${-d} days ago`;
+    }
+    if (d === 0) return "اليوم";
+    if (d === 1) return "خلال ٢٤ ساعة";
+    const a = Math.abs(d);
+    const unit = a === 1 ? "يوم" : a === 2 ? "يومين" : a <= 10 ? `${num(a)} أيام` : `${num(a)} يومًا`;
+    return d > 0 ? `بعد ${unit}` : `منذ ${unit}`;
+  };
+  const t = { ...dict[l], in: rel, ago: (d: number) => rel(-d) };
   return {
+    rel,
+    plan: (p: string) => {
+      if (l === "en" || !p) return p;
+      const k = p.trim().toLowerCase();
+      if (plansAr[k]) return plansAr[k];
+      return p.replace(/\d+/g, (m) => num(Number(m))).replace(/\bGB\b/, "جيجابايت");
+    },
     lang: l,
     dir: l === "ar" ? "rtl" : "ltr",
     t,
     cat: (c: Category) => cats[l][c],
     status: (s: DisplayStatus) => statuses[l][s],
     cycle: (c: Cycle) => cycles[l][c],
-    num: (n: number) => nfInt.format(n),
+    num,
     money: (n: number) => (l === "ar" ? `${nf.format(n)} ${t.rs}` : `${t.rs} ${nf.format(n)}`),
     date: (iso: string, opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" }) => {
       const [y, m, d] = iso.split("-").map(Number);

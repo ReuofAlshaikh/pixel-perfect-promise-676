@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alerts, displayStatus, totals, type Subscription } from "./subs";
+import { alerts, displayStatus, sortSubs, totals, type Subscription } from "./subs";
 
 const today = new Date(2026, 10, 3);
 const mk = (p: Partial<Subscription>): Subscription => ({
@@ -14,7 +14,7 @@ describe("subscription rules", () => {
     expect(alerts([mk({ nextRenewal: "2026-11-09" })], today)).toHaveLength(0);
   });
   it("marks an ending free trial as a trial alert", () => {
-    expect(alerts([mk({ nextRenewal: "2026-11-05", trial: true })], today)[0].kind).toBe("trial");
+    expect(alerts([mk({ nextRenewal: "2026-11-05", trial: true })], today)[0]?.kind).toBe("trial");
   });
   it("counts yearly plans as price/12 per month", () => {
     expect(totals([mk({ price: 120, cycle: "yearly" })], today).monthly).toBe(10);
@@ -23,5 +23,9 @@ describe("subscription rules", () => {
     const t = totals([mk({ canceled: true }), mk({ nextRenewal: "2026-11-01" }), mk({})], today);
     expect(t.activeCount).toBe(1);
     expect(displayStatus(mk({ nextRenewal: "2026-11-01" }), today)).toBe("expired");
+  });
+  it("renewal sort puts expired and canceled last", () => {
+    const out = sortSubs([mk({ id: "e", nextRenewal: "2026-11-01" }), mk({ id: "c", canceled: true, nextRenewal: "2026-11-10" }), mk({ id: "a", nextRenewal: "2026-12-01" })], "renewal", today);
+    expect(out.map((s) => s.id)).toEqual(["a", "e", "c"]);
   });
 });
